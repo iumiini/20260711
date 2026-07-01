@@ -120,6 +120,19 @@
   .stat:last-child { border-bottom: none; }
   .stat .k { color: var(--muted); }
   .stat .v { font-weight: 800; font-size: 1.2rem; }
+  .thresh { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .thresh > div { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .thresh .tstar { color: var(--accent); font-size: 0.85rem; letter-spacing: -1px; white-space: nowrap; }
+  .thresh input { height: 44px; text-align: center; font-size: 1.1rem; font-weight: 700;
+    background: #0b1220; color: var(--text); border: 1px solid var(--card2); border-radius: 10px; width: 100%; }
+
+  .score-card { text-align: center; padding: 24px; }
+  .score-label { color: var(--muted); font-size: 1rem; margin-bottom: 6px; }
+  .score-stars { font-size: 2.8rem; letter-spacing: 4px; line-height: 1.1; }
+  .score-stars .on { color: var(--accent); }
+  .score-stars .off { color: var(--card2); }
+  .score-num { font-size: 1.4rem; font-weight: 800; margin-top: 8px; }
+
   .hist { max-height: 40vh; overflow-y: auto; }
   .hist-item { background: var(--card2); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 0.95rem; }
   .hist-item .t { color: var(--accent); font-weight: 700; }
@@ -173,6 +186,16 @@
       </div>
     </div>
 
+    <div class="card">
+      <label>評分門檻（達到「完成題數」給對應星等，1★為參與分）</label>
+      <div class="thresh">
+        <div><span class="tstar">★★</span><input id="t2" type="number" min="0" value="4" inputmode="numeric" /></div>
+        <div><span class="tstar">★★★</span><input id="t3" type="number" min="0" value="7" inputmode="numeric" /></div>
+        <div><span class="tstar">★★★★</span><input id="t4" type="number" min="0" value="10" inputmode="numeric" /></div>
+        <div><span class="tstar">★★★★★</span><input id="t5" type="number" min="0" value="14" inputmode="numeric" /></div>
+      </div>
+    </div>
+
     <button id="startBtn" class="btn-primary">開始出題</button>
   </section>
 
@@ -200,6 +223,11 @@
   <!-- ===== 結算畫面 ===== -->
   <section id="end" class="screen">
     <h1>🏁 遊戲結束</h1>
+    <div class="card score-card">
+      <div class="score-label">評分</div>
+      <div class="score-stars" id="rStars">★★★★★</div>
+      <div class="score-num"><span id="rScore">0</span> / 5 分</div>
+    </div>
     <div class="card">
       <div class="stat"><span class="k">完成題數</span><span class="v" id="rDone">0</span></div>
       <div class="stat"><span class="k">總花費時間</span><span class="v" id="rTotal">0 秒</span></div>
@@ -232,7 +260,7 @@
   }
 
   function clampInputs() {
-    ["male", "female", "totalMin", "maxCount"].forEach(function (id) {
+    ["male", "female", "totalMin", "maxCount", "t2", "t3", "t4", "t5"].forEach(function (id) {
       var el = $(id);
       var v = parseInt(el.value, 10);
       if (isNaN(v) || v < 0) v = 0;
@@ -427,9 +455,16 @@
     var maxCount = parseInt($("maxCount").value, 10) || 0;
     var cap = maxCount > 0 ? Math.min(maxCount, total) : total;
 
+    var thresholds = {
+      t2: parseInt($("t2").value, 10) || 0,
+      t3: parseInt($("t3").value, 10) || 0,
+      t4: parseInt($("t4").value, 10) || 0,
+      t5: parseInt($("t5").value, 10) || 0
+    };
+
     state = {
       males: males, females: females, total: total, cap: cap,
-      difficulty: difficulty,
+      difficulty: difficulty, thresholds: thresholds,
       totalSec: totalMin * 60,
       remain: totalMin * 60,
       qNum: 0, qElapsed: 0, current: null, history: [],
@@ -461,6 +496,22 @@
     var done = state.history.filter(function (h) { return h.outcome !== "skip"; });
     var totalSpent = state.history.reduce(function (a, h) { return a + h.sec; }, 0);
     var times = done.map(function (h) { return h.sec; });
+
+    // 依完成題數計算 1-5 分
+    var count = done.length;
+    var t = state.thresholds;
+    var score;
+    if (count >= t.t5) score = 5;
+    else if (count >= t.t4) score = 4;
+    else if (count >= t.t3) score = 3;
+    else if (count >= t.t2) score = 2;
+    else score = 1;
+    var starsHtml = "";
+    for (var s = 1; s <= 5; s++) {
+      starsHtml += '<span class="' + (s <= score ? "on" : "off") + '">★</span>';
+    }
+    $("rStars").innerHTML = starsHtml;
+    $("rScore").textContent = score;
 
     $("rDone").textContent = done.length + " 題";
     $("rTotal").textContent = totalSpent + " 秒";
