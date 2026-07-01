@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>澆灌撒種 出題工具</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card2: #334155;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --water: #38bdf8;
+    --seed: #4ade80;
+    --male: #60a5fa;
+    --female: #f472b6;
+    --accent: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  #app { height: 100%; display: flex; flex-direction: column; }
+  .screen { flex: 1; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
+  .screen.active { display: flex; }
+
+  h1 { font-size: 1.6rem; margin: 0 0 4px; text-align: center; }
+  .subtitle { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+  .card { background: var(--card); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+  label { display: block; font-size: 0.95rem; color: var(--muted); margin-bottom: 8px; }
+  .row { display: flex; gap: 12px; }
+  .row > * { flex: 1; }
+
+  .stepper { display: flex; align-items: center; gap: 10px; }
+  .stepper button {
+    width: 48px; height: 48px; border-radius: 12px; border: none;
+    background: var(--card2); color: var(--text); font-size: 1.6rem; font-weight: 700;
+    cursor: pointer;
+  }
+  .stepper input {
+    flex: 1; height: 48px; text-align: center; font-size: 1.4rem; font-weight: 700;
+    background: #0b1220; color: var(--text); border: 1px solid var(--card2); border-radius: 12px;
+    width: 100%;
+  }
+
+  select, input[type=number] {
+    width: 100%; height: 48px; font-size: 1.1rem; padding: 0 12px;
+    background: #0b1220; color: var(--text); border: 1px solid var(--card2); border-radius: 12px;
+  }
+
+  .seg { display: flex; gap: 8px; }
+  .seg button {
+    flex: 1; height: 48px; border-radius: 12px; border: 1px solid var(--card2);
+    background: transparent; color: var(--muted); font-size: 1rem; font-weight: 600; cursor: pointer;
+  }
+  .seg button.on { background: var(--accent); color: #1a1200; border-color: var(--accent); }
+
+  .btn-primary {
+    width: 100%; padding: 18px; border: none; border-radius: 16px;
+    background: var(--accent); color: #1a1200; font-size: 1.3rem; font-weight: 800; cursor: pointer;
+  }
+  .btn-ghost {
+    padding: 12px; border: 1px solid var(--card2); border-radius: 12px;
+    background: transparent; color: var(--muted); font-size: 1rem; cursor: pointer;
+  }
+
+  /* Game screen */
+  #game { padding: 0; }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 20px; background: var(--card);
+  }
+  .topbar .qnum { font-size: 1rem; color: var(--muted); font-weight: 600; }
+  .timers { display: flex; gap: 18px; align-items: baseline; }
+  .timer-total { font-size: 1.3rem; font-weight: 800; }
+  .timer-total.warn { color: var(--danger); }
+  .timer-q { font-size: 1rem; color: var(--muted); }
+
+  .question-area {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    align-items: center; gap: 22px; padding: 20px; text-align: center;
+  }
+  .qline {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    background: var(--card); border-radius: 20px; padding: 20px 26px; width: 100%; max-width: 520px;
+  }
+  .qline .icon { font-size: 2.6rem; }
+  .qline .label { font-size: 1.5rem; font-weight: 700; }
+  .qline.water .count { color: var(--water); }
+  .qline.seed .count { color: var(--seed); }
+  .qline .count { font-size: 3.2rem; font-weight: 900; }
+  .qline .unit { font-size: 1.3rem; color: var(--muted); }
+  .gender { margin-top: 6px; font-size: 1.2rem; font-weight: 700; }
+  .gender .m { color: var(--male); }
+  .gender .f { color: var(--female); }
+  .gender .sub { color: var(--muted); font-weight: 500; font-size: 1rem; }
+
+  .controls { padding: 16px 20px 26px; display: flex; flex-direction: column; gap: 12px; }
+  .btn-done {
+    width: 100%; padding: 22px; border: none; border-radius: 18px;
+    background: var(--seed); color: #052e13; font-size: 1.5rem; font-weight: 900; cursor: pointer;
+  }
+  .btn-done:active { transform: scale(0.98); }
+  .row-2 { display: flex; gap: 12px; }
+  .row-2 > * { flex: 1; }
+
+  /* End screen */
+  .stat { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--card2); }
+  .stat:last-child { border-bottom: none; }
+  .stat .k { color: var(--muted); }
+  .stat .v { font-weight: 800; font-size: 1.2rem; }
+  .hist { max-height: 40vh; overflow-y: auto; }
+  .hist-item { background: var(--card2); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 0.95rem; }
+  .hist-item .t { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== 設定畫面 ===== -->
+  <section id="setup" class="screen active">
+    <h1>💧🌱 澆灌撒種 出題工具</h1>
+    <p class="subtitle">先輸入這一隊的人數，工具會自動出合理的題目</p>
+
+    <div class="card">
+      <label>👦 男生人數</label>
+      <div class="stepper">
+        <button type="button" data-step="male" data-d="-1">−</button>
+        <input id="male" type="number" min="0" value="5" inputmode="numeric" />
+        <button type="button" data-step="male" data-d="1">＋</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>👧 女生人數</label>
+      <div class="stepper">
+        <button type="button" data-step="female" data-d="-1">−</button>
+        <input id="female" type="number" min="0" value="5" inputmode="numeric" />
+        <button type="button" data-step="female" data-d="1">＋</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>難度</label>
+      <div class="seg" id="difficulty">
+        <button type="button" data-v="basic">基礎（只出數量）</button>
+        <button type="button" data-v="advanced">進階（含性別）</button>
+        <button type="button" data-v="mixed" class="on">混合</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>總時間（分鐘，0＝不限）</label>
+          <input id="totalMin" type="number" min="0" value="5" inputmode="numeric" />
+        </div>
+        <div>
+          <label>單項最多幾個（0＝依總人數）</label>
+          <input id="maxCount" type="number" min="0" value="0" inputmode="numeric" />
+        </div>
+      </div>
+    </div>
+
+    <button id="startBtn" class="btn-primary">開始出題</button>
+  </section>
+
+  <!-- ===== 遊戲畫面 ===== -->
+  <section id="game" class="screen">
+    <div class="topbar">
+      <span class="qnum">第 <span id="qNum">1</span> 題</span>
+      <div class="timers">
+        <span class="timer-q">本題 <span id="qTime">0</span> 秒</span>
+        <span class="timer-total" id="totalTime">--:--</span>
+      </div>
+    </div>
+
+    <div class="question-area" id="questionArea"></div>
+
+    <div class="controls">
+      <button id="doneBtn" class="btn-done">完成 ✓ 下一題</button>
+      <div class="row-2">
+        <button id="skipBtn" class="btn-ghost">跳過此題</button>
+        <button id="endBtn" class="btn-ghost">結束遊戲</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 結算畫面 ===== -->
+  <section id="end" class="screen">
+    <h1>🏁 遊戲結束</h1>
+    <div class="card">
+      <div class="stat"><span class="k">完成題數</span><span class="v" id="rDone">0</span></div>
+      <div class="stat"><span class="k">總花費時間</span><span class="v" id="rTotal">0 秒</span></div>
+      <div class="stat"><span class="k">每題平均</span><span class="v" id="rAvg">0 秒</span></div>
+      <div class="stat"><span class="k">最快 / 最慢</span><span class="v" id="rMinMax">-</span></div>
+    </div>
+    <div class="card">
+      <label>作答紀錄</label>
+      <div class="hist" id="hist"></div>
+    </div>
+    <button id="againBtn" class="btn-primary">再玩一次</button>
+    <button id="backBtn" class="btn-ghost" style="margin-top:12px">修改設定</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- 小工具 ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var randInt = function (min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; };
+  var pick = function (arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+
+  function showScreen(id) {
+    var s = document.querySelectorAll(".screen");
+    for (var i = 0; i < s.length; i++) s[i].classList.remove("active");
+    $(id).classList.add("active");
+  }
+
+  function clampInputs() {
+    ["male", "female", "totalMin", "maxCount"].forEach(function (id) {
+      var el = $(id);
+      var v = parseInt(el.value, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      el.value = v;
+    });
+  }
+
+  // ---------- 狀態 ----------
+  var state = null;
+  var difficulty = "mixed";
+  var totalTimerId = null;
+  var qTimerId = null;
+
+  // ---------- 出題邏輯 ----------
+  // males / females: 這隊實際人數；cap: 單項最大數量
+  // 回傳 { water: {n, gender}, seed: {n, gender} }，其中 gender 可能為 null
+  function genQuestion(males, females, cap, useGender) {
+    var total = males + females;
+
+    // 決定哪幾種道具出現（至少一種），偏向兩種都出
+    var incW, incS;
+    var r = Math.random();
+    if (r < 0.7) { incW = true; incS = true; }
+    else if (r < 0.85) { incW = true; incS = false; }
+    else { incW = false; incS = true; }
+
+    function makeItem(include) {
+      if (!include) return null;
+      var n = randInt(1, Math.max(1, cap));
+      var gender = null;
+      // 進階：有機會加上性別條件
+      if (useGender && Math.random() < 0.65) {
+        gender = makeGender(n, males, females);
+      }
+      return { n: n, gender: gender };
+    }
+
+    var q = { water: makeItem(incW), seed: makeItem(incS) };
+    // 保底：至少一項
+    if (!q.water && !q.seed) {
+      q.water = { n: randInt(1, Math.max(1, cap)), gender: null };
+    }
+    return q;
+  }
+
+  // 產生合理的性別條件（絕不超過實際男/女人數）
+  // 樣式：full=男X女Y、male=其中X個男生、female=其中X個女生
+  function makeGender(n, males, females) {
+    var styles = [];
+    if (males > 0) styles.push("male");
+    if (females > 0) styles.push("female");
+    if (males > 0 && females > 0) styles.push("full");
+    if (styles.length === 0) return null;
+
+    var style = pick(styles);
+
+    if (style === "male") {
+      var maxM = Math.min(n, males);
+      return { type: "male", m: randInt(1, maxM) };
+    }
+    if (style === "female") {
+      var maxF = Math.min(n, females);
+      return { type: "female", f: randInt(1, maxF) };
+    }
+    // full：男 m + 女 f = n，且 m<=males, f<=females
+    var loM = Math.max(0, n - females);
+    var hiM = Math.min(n, males);
+    var m = randInt(loM, hiM);
+    return { type: "full", m: m, f: n - m };
+  }
+
+  function genderText(g) {
+    if (!g) return "";
+    if (g.type === "male") return '其中 <span class="m">' + g.m + '</span> 個男生';
+    if (g.type === "female") return '其中 <span class="f">' + g.f + '</span> 個女生';
+    return '男 <span class="m">' + g.m + '</span>、女 <span class="f">' + g.f + '</span>';
+  }
+
+  function genderPlain(g) {
+    if (!g) return "";
+    if (g.type === "male") return "其中 " + g.m + " 個男生";
+    if (g.type === "female") return "其中 " + g.f + " 個女生";
+    return "男 " + g.m + "、女 " + g.f;
+  }
+
+  // ---------- 顯示題目 ----------
+  function renderQuestion(q) {
+    var html = "";
+    if (q.water) {
+      html += '<div class="qline water">' +
+        '<span class="icon">💧</span>' +
+        '<span class="label">澆灌</span>' +
+        '<span class="count">' + q.water.n + '</span>' +
+        '<span class="unit">個</span>' +
+        '</div>';
+      if (q.water.gender) {
+        html += '<div class="gender"><span class="sub">澆灌 &middot; </span>' + genderText(q.water.gender) + '</div>';
+      }
+    }
+    if (q.seed) {
+      html += '<div class="qline seed">' +
+        '<span class="icon">🌱</span>' +
+        '<span class="label">撒種</span>' +
+        '<span class="count">' + q.seed.n + '</span>' +
+        '<span class="unit">個</span>' +
+        '</div>';
+      if (q.seed.gender) {
+        html += '<div class="gender"><span class="sub">撒種 &middot; </span>' + genderText(q.seed.gender) + '</div>';
+      }
+    }
+    $("questionArea").innerHTML = html;
+  }
+
+  function questionPlain(q) {
+    var parts = [];
+    if (q.water) {
+      var w = "澆灌 " + q.water.n + " 個";
+      if (q.water.gender) w += "（" + genderPlain(q.water.gender) + "）";
+      parts.push(w);
+    }
+    if (q.seed) {
+      var s = "撒種 " + q.seed.n + " 個";
+      if (q.seed.gender) s += "（" + genderPlain(q.seed.gender) + "）";
+      parts.push(s);
+    }
+    return parts.join("，");
+  }
+
+  // ---------- 計時 ----------
+  function fmt(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  function startTimers() {
+    // 總時間倒數
+    if (state.totalSec > 0) {
+      $("totalTime").textContent = fmt(state.remain);
+      totalTimerId = setInterval(function () {
+        state.remain--;
+        if (state.remain <= 10) $("totalTime").classList.add("warn");
+        if (state.remain <= 0) {
+          $("totalTime").textContent = "00:00";
+          endGame();
+          return;
+        }
+        $("totalTime").textContent = fmt(state.remain);
+      }, 1000);
+    } else {
+      $("totalTime").textContent = "∞";
+    }
+    // 本題正計時
+    qTimerId = setInterval(function () {
+      state.qElapsed++;
+      $("qTime").textContent = state.qElapsed;
+    }, 1000);
+  }
+
+  function stopTimers() {
+    if (totalTimerId) { clearInterval(totalTimerId); totalTimerId = null; }
+    if (qTimerId) { clearInterval(qTimerId); qTimerId = null; }
+  }
+
+  // ---------- 流程 ----------
+  function nextQuestion(prevOutcome) {
+    // 記錄上一題
+    if (state.current) {
+      state.history.push({
+        text: questionPlain(state.current),
+        sec: state.qElapsed,
+        outcome: prevOutcome
+      });
+    }
+    // 出新題
+    var q = genQuestion(state.males, state.females, state.cap, state.useGender());
+    state.current = q;
+    state.qNum++;
+    state.qElapsed = 0;
+    $("qNum").textContent = state.qNum;
+    $("qTime").textContent = "0";
+    renderQuestion(q);
+  }
+
+  function startGame() {
+    clampInputs();
+    var males = parseInt($("male").value, 10) || 0;
+    var females = parseInt($("female").value, 10) || 0;
+    var total = males + females;
+    if (total < 1) { alert("請至少輸入 1 個人"); return; }
+
+    var totalMin = parseInt($("totalMin").value, 10) || 0;
+    var maxCount = parseInt($("maxCount").value, 10) || 0;
+    var cap = maxCount > 0 ? Math.min(maxCount, total) : total;
+
+    state = {
+      males: males, females: females, total: total, cap: cap,
+      difficulty: difficulty,
+      totalSec: totalMin * 60,
+      remain: totalMin * 60,
+      qNum: 0, qElapsed: 0, current: null, history: [],
+      useGender: function () {
+        if (this.difficulty === "basic") return false;
+        if (this.difficulty === "advanced") return true;
+        return Math.random() < 0.6; // mixed
+      }
+    };
+
+    $("totalTime").classList.remove("warn");
+    showScreen("game");
+    nextQuestion(null);
+    startTimers();
+  }
+
+  function endGame() {
+    stopTimers();
+    // 把當前正在作答的題目也算進去（視為完成）
+    if (state.current) {
+      state.history.push({
+        text: questionPlain(state.current),
+        sec: state.qElapsed,
+        outcome: "done"
+      });
+      state.current = null;
+    }
+
+    var done = state.history.filter(function (h) { return h.outcome !== "skip"; });
+    var totalSpent = state.history.reduce(function (a, h) { return a + h.sec; }, 0);
+    var times = done.map(function (h) { return h.sec; });
+
+    $("rDone").textContent = done.length + " 題";
+    $("rTotal").textContent = totalSpent + " 秒";
+    $("rAvg").textContent = done.length ? Math.round(totalSpent / done.length) + " 秒" : "0 秒";
+    if (times.length) {
+      $("rMinMax").textContent = Math.min.apply(null, times) + " / " + Math.max.apply(null, times) + " 秒";
+    } else {
+      $("rMinMax").textContent = "-";
+    }
+
+    var histHtml = "";
+    state.history.forEach(function (h, i) {
+      var tag = h.outcome === "skip" ? "（跳過）" : "";
+      histHtml += '<div class="hist-item"><span class="t">' + (i + 1) + '.</span> ' +
+        h.text + ' <span style="color:var(--muted)">— ' + h.sec + ' 秒 ' + tag + '</span></div>';
+    });
+    $("hist").innerHTML = histHtml || '<div class="hist-item">沒有作答紀錄</div>';
+
+    showScreen("end");
+  }
+
+  // ---------- 事件綁定 ----------
+  document.querySelectorAll("[data-step]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var el = $(btn.dataset.step);
+      var v = (parseInt(el.value, 10) || 0) + parseInt(btn.dataset.d, 10);
+      if (v < 0) v = 0;
+      el.value = v;
+    });
+  });
+
+  document.querySelectorAll("#difficulty button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll("#difficulty button").forEach(function (b) { b.classList.remove("on"); });
+      btn.classList.add("on");
+      difficulty = btn.dataset.v;
+    });
+  });
+
+  $("startBtn").addEventListener("click", startGame);
+
+  $("doneBtn").addEventListener("click", function () {
+    // 完成本題 → 記錄並切換到下一題（本題計時重置）
+    nextQuestion("done");
+  });
+
+  $("skipBtn").addEventListener("click", function () {
+    nextQuestion("skip");
+  });
+
+  $("endBtn").addEventListener("click", function () {
+    if (confirm("確定要結束遊戲？")) endGame();
+  });
+
+  $("againBtn").addEventListener("click", startGame);
+  $("backBtn").addEventListener("click", function () { showScreen("setup"); });
+
+})();
+</script>
+</body>
+</html>
