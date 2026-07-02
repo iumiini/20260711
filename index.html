@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="出題工具" />
-<title>澆灌撒種 出題工具</title>
+<title>栽種澆灌 出題工具</title>
 <style>
   :root {
     --bg: #0f172a;
@@ -144,7 +144,7 @@
 
   <!-- ===== 設定畫面 ===== -->
   <section id="setup" class="screen active">
-    <h1>💧🌱 澆灌撒種 出題工具</h1>
+    <h1>🌱💧 栽種澆灌 出題工具</h1>
     <p class="subtitle">先輸入這一隊的人數，工具會自動出合理的題目</p>
 
     <div class="card">
@@ -353,6 +353,17 @@
   // ---------- 顯示題目 ----------
   function renderQuestion(q) {
     var html = "";
+    if (q.seed) {
+      html += '<div class="qline seed">' +
+        '<span class="icon">🌱</span>' +
+        '<span class="label">栽種</span>' +
+        '<span class="count">' + q.seed.n + '</span>' +
+        '<span class="unit">個</span>' +
+        '</div>';
+      if (q.seed.gender) {
+        html += '<div class="gender"><span class="sub">栽種 &middot; </span>' + genderText(q.seed.gender) + '</div>';
+      }
+    }
     if (q.water) {
       html += '<div class="qline water">' +
         '<span class="icon">💧</span>' +
@@ -364,31 +375,20 @@
         html += '<div class="gender"><span class="sub">澆灌 &middot; </span>' + genderText(q.water.gender) + '</div>';
       }
     }
-    if (q.seed) {
-      html += '<div class="qline seed">' +
-        '<span class="icon">🌱</span>' +
-        '<span class="label">撒種</span>' +
-        '<span class="count">' + q.seed.n + '</span>' +
-        '<span class="unit">個</span>' +
-        '</div>';
-      if (q.seed.gender) {
-        html += '<div class="gender"><span class="sub">撒種 &middot; </span>' + genderText(q.seed.gender) + '</div>';
-      }
-    }
     $("questionArea").innerHTML = html;
   }
 
   function questionPlain(q) {
     var parts = [];
+    if (q.seed) {
+      var s = "栽種 " + q.seed.n + " 個";
+      if (q.seed.gender) s += "（" + genderPlain(q.seed.gender) + "）";
+      parts.push(s);
+    }
     if (q.water) {
       var w = "澆灌 " + q.water.n + " 個";
       if (q.water.gender) w += "（" + genderPlain(q.water.gender) + "）";
       parts.push(w);
-    }
-    if (q.seed) {
-      var s = "撒種 " + q.seed.n + " 個";
-      if (q.seed.gender) s += "（" + genderPlain(q.seed.gender) + "）";
-      parts.push(s);
     }
     return parts.join("，");
   }
